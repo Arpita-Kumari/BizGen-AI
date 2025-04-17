@@ -391,54 +391,101 @@ def get_industry_market_summary(industry):
     return summary, hist
 
 # Streamlit Config
+import streamlit as st
+import matplotlib.pyplot as plt
+from xhtml2pdf import pisa
+
+# Set page config
 st.set_page_config(page_title="AI Business Report Generator", layout="wide")
 
-# Sidebar Navigation
-page = st.sidebar.radio("Navigation", ["Home", "Generated Report"])
+# Initialize state
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
+
+page = st.session_state.page
+
+# Inject JS & CSS for feedback
+st.markdown("""
+    <script>
+        function playSound() {
+            var audio = new Audio("https://www.soundjay.com/buttons/sounds/button-29.mp3");
+            audio.play();
+        }
+    </script>
+    <style>
+        div.stButton > button:first-child {
+            height: 3em;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            background-color: #dc3545;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        div.stButton > button.enabled {
+            background-color: #28a745 !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Home Page
 if page == "Home":
     st.markdown("""
-        <style>
-            .report-title { font-size: 2.8em; font-weight: bold; color: #1f4e79; text-align: center; }
-            .report-subtitle { font-size: 1.2em; color: #333; text-align: center; margin-bottom: 2em; }
-            .stButton>button { background-color: #1f4e79; color: white; border-radius: 6px; font-weight: bold; }
-        </style>
-        <div class='report-title'>📊 AI-Powered Business Report Generator</div>
-        <div class='report-subtitle'>Generate investor-ready business reports using GPT-4 and market insights.</div>
+        <h1 style='text-align: center; color: #1f4e79;'>AI-Powered Business Report Generator</h1>
+        <h4 style='text-align: center; color: #ccc;'>Generate investor-ready business reports using GPT-4 and market insights.</h4>
     """, unsafe_allow_html=True)
 
     with st.form("report_form"):
-        st.markdown("### 🚀 Enter Business Details")
-        industry = st.text_input("🔍 Industry", placeholder="e.g. Fintech")
-        target_market = st.text_input("🎯 Target Market", placeholder="e.g. Gen Z in North America")
-        goal = st.text_area("📌 Business Goal", placeholder="Describe your product or idea")
-        budget = st.text_input("💰 Estimated Budget", placeholder="$10,000")
-        submit = st.form_submit_button("Generate Full Report")
+        st.markdown("### Enter Business Details")
+        industry = st.text_input("Industry", placeholder="e.g. Fintech")
+        target_market = st.text_input("Target Market", placeholder="e.g. Gen Z in North America")
+        goal = st.text_area("Business Goal", placeholder="Describe your product or idea")
+        budget = st.text_input("Estimated Budget", placeholder="$10,000")
+        report_type = st.selectbox("Report Type", ["Summary", "Full"])
+
+        form_complete = all([industry, target_market, goal, budget])
+        btn_class = "enabled" if form_complete else ""
+        submit = st.form_submit_button(
+            "Generate Report",
+            type="primary",
+            help="Fill all fields to enable green button"
+        )
+
+        # Add dynamic button color update
+        st.markdown(f"""
+            <script>
+                const btn = window.parent.document.querySelector('button[type="submit"]');
+                if (btn) {{
+                    btn.classList.toggle("enabled", {str(form_complete).lower()});
+                }}
+            </script>
+        """, unsafe_allow_html=True)
 
     if submit:
-        if not all([industry, target_market, goal, budget]):
-            st.warning("⚠️ Please fill in all fields.")
-        else:
-            st.session_state.generated = True
-            st.session_state.industry = industry
-            st.session_state.target_market = target_market
-            st.session_state.goal = goal
-            st.session_state.budget = budget
-            st.success("✅ Report generated! View it under 'Generated Report'.")
+        st.session_state.generated = True
+        st.session_state.industry = industry
+        st.session_state.target_market = target_market
+        st.session_state.goal = goal
+        st.session_state.budget = budget
+        st.session_state.report_type = report_type
+        st.session_state.page = "Generated Report"
+        st.components.v1.html("<script>playSound();</script>", height=0)
+        st.rerun()
 
 # Generated Report Page
-if page == "Generated Report" and st.session_state.get("generated"):
+elif page == "Generated Report" and st.session_state.get("generated"):
     industry = st.session_state.industry
     target_market = st.session_state.target_market
     goal = st.session_state.goal
     budget = st.session_state.budget
+    report_type = st.session_state.report_type
 
-    with st.spinner("🔍 Generating your full business report..."):
+    if report_type == "Summary":
+        result = get_business_feasibility_summary(industry, target_market, goal, budget)
+    else:
         result = generate_full_report(industry, target_market, goal, budget)
 
     formatted_result = result.replace('\n', '<br>')
-
     st.markdown("""
         <style>
             .report-block {
@@ -450,16 +497,15 @@ if page == "Generated Report" and st.session_state.get("generated"):
             }
         </style>
     """, unsafe_allow_html=True)
-
-    st.markdown("<h2 style='color:#1f4e79;'>📘 Full Business Report</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:#1f4e79;'>Business Report</h2>", unsafe_allow_html=True)
     st.markdown(f"<div class='report-block'>{formatted_result}</div>", unsafe_allow_html=True)
 
-    # Charts
+    # Visualizations
     st.markdown("---")
-    st.markdown("<h3 style='color:#1f4e79;'>📊 Visual Market Analysis</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#1f4e79;'>Visual Market Analysis</h3>", unsafe_allow_html=True)
 
     trend_summary, trend_df = get_google_trends(industry)
-    st.markdown(f"*🔍 Google Trends Summary*: {trend_summary}")
+    st.markdown(f"**Google Trends Summary**: {trend_summary}")
     if trend_df is not None:
         fig1, ax1 = plt.subplots()
         trend_df[trend_df.columns[0]].plot(ax=ax1, title=f"Google Trends for {industry}")
@@ -477,22 +523,20 @@ if page == "Generated Report" and st.session_state.get("generated"):
         fig2.savefig("growth_chart.png")
 
     market_summary, hist = get_industry_market_summary(industry)
-    st.markdown(f"*📈 ETF Market Summary*: {market_summary}")
+    st.markdown(f"**ETF Market Summary**: {market_summary}")
     if hist is not None:
         fig3, ax3 = plt.subplots()
         hist["Close"].plot(ax=ax3, title=f"ETF Price Trend - {industry}")
         st.pyplot(fig3)
         fig3.savefig("etf_chart.png")
 
-    # PDF Export
-    st.markdown("### 📅 Download Report")
-
     def export_to_pdf(report_text, file_name):
-        html = f"""
+        formatted_text = report_text.replace("\n", "<br>")
+        html_content = f"""
         <html>
         <body>
             <h1>AI-Generated Business Report</h1>
-            <div>{report_text}</div>
+            <div>{formatted_text}</div>
             <img src='trend_chart.png'><br>
             <img src='growth_chart.png'><br>
             <img src='etf_chart.png'><br>
@@ -500,13 +544,22 @@ if page == "Generated Report" and st.session_state.get("generated"):
         </html>
         """
         with open(file_name, "w+b") as f:
-            pisa.CreatePDF(html, dest=f)
+            pisa.CreatePDF(html_content, dest=f)
 
-    export_to_pdf(formatted_result, "business_report.pdf")
-
+    st.markdown("### Download Report")
+    export_to_pdf(result, "business_report.pdf")
     with open("business_report.pdf", "rb") as f:
-        st.download_button("📄 Download PDF with Charts", f, "business_report.pdf", mime="application/pdf")
-#gg
+        st.download_button("Download PDF with Charts", f, "business_report.pdf", mime="application/pdf")
+
+    # Back Button
+    if st.button("⬅ Back to Home"):
+        st.session_state.page = "Home"
+        st.rerun()
+
+# Fallback
+else:
+    st.info("Please generate a report from the Home page first.")
+
 
 
 
