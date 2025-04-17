@@ -19,7 +19,6 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv() 
-
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
 def scrape_investopedia_definition(industry_term):
@@ -350,6 +349,7 @@ def plot_growth_bar(df):
     ax.invert_yaxis()
     st.pyplot(fig)
 
+# stream lit 
 import streamlit as st
 import matplotlib.pyplot as plt
 from xhtml2pdf import pisa
@@ -361,20 +361,30 @@ st.set_page_config(page_title="AI Business Report Generator", layout="wide")
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
-# Sidebar
-page = st.sidebar.radio("Navigation", ["Home", "Generated Report"], index=0 if st.session_state.page == "Home" else 1)
+# Determine page based on state
+page = st.session_state.page
 
 # Home Page
 if page == "Home":
     st.markdown("""
         <style>
-            .report-title { font-size: 2.8em; font-weight: bold; color: #1f4e79; text-align: center; }
-            .report-subtitle { font-size: 1.2em; color: #333; text-align: center; margin-bottom: 2em; }
-            .stButton>button:disabled { background-color: #ccc !important; color: #999 !important; }
-            .stButton>button:enabled { background-color: #28a745 !important; color: white; font-weight: bold; }
+            div.stButton > button:first-child {
+                background: linear-gradient(90deg, #dc3545, #28a745);
+                color: white;
+                font-weight: bold;
+                height: 3em;
+                border-radius: 8px;
+                border: none;
+                transition: background-position 0.3s ease;
+                background-size: 200% auto;
+                background-position: left center;
+            }
+            div.stButton > button:first-child:hover {
+                background-position: right center;
+            }
         </style>
-        <div class='report-title'>AI-Powered Business Report Generator</div>
-        <div class='report-subtitle'>Generate investor-ready business reports using GPT-4 and market insights.</div>
+        <h1 style='text-align: center; color: #1f4e79;'>AI-Powered Business Report Generator</h1>
+        <h4 style='text-align: center; color: #ccc;'>Generate investor-ready business reports using GPT-4 and market insights.</h4>
     """, unsafe_allow_html=True)
 
     with st.form("report_form"):
@@ -385,10 +395,9 @@ if page == "Home":
         budget = st.text_input("Estimated Budget", placeholder="$10,000")
         report_type = st.selectbox("Report Type", ["Summary", "Full"])
 
-        all_filled = all([industry, target_market, goal, budget])
-        submit = st.form_submit_button("Generate Report", disabled=not all_filled)
+        submit = st.form_submit_button("Generate Report")
 
-    if submit and all_filled:
+    if submit:
         st.session_state.generated = True
         st.session_state.industry = industry
         st.session_state.target_market = target_market
@@ -396,7 +405,7 @@ if page == "Home":
         st.session_state.budget = budget
         st.session_state.report_type = report_type
         st.session_state.page = "Generated Report"
-        st.experimental_rerun()
+        st.rerun()
 
 # Generated Report Page
 elif page == "Generated Report" and st.session_state.get("generated"):
@@ -406,10 +415,7 @@ elif page == "Generated Report" and st.session_state.get("generated"):
     budget = st.session_state.budget
     report_type = st.session_state.report_type
 
-    # You must define these functions elsewhere:
-    # get_business_feasibility_summary, generate_full_report,
-    # get_google_trends, get_market_insights, get_industry_market_summary
-
+    # Replace these with actual function definitions
     if report_type == "Summary":
         result = get_business_feasibility_summary(industry, target_market, goal, budget)
     else:
@@ -485,4 +491,7 @@ elif page == "Generated Report" and st.session_state.get("generated"):
 # Fallback
 else:
     st.info("Please generate a report from the Home page first.")
+
+
+
 
