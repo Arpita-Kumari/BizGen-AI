@@ -504,6 +504,7 @@ if page == "Generated Report" and st.session_state.get("generated"):
 
     with open("business_report.pdf", "rb") as f:
         st.download_button("📄 Download PDF with Charts", f, "business_report.pdf", mime="application/pdf")
+#gg
 
 
 
