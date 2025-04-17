@@ -383,10 +383,12 @@ if page == "Home":
         budget = st.text_input("Estimated Budget", placeholder="$10,000")
         report_type = st.selectbox("Report Type", ["Summary", "Full"])
 
-        all_filled = all([industry, target_market, goal, budget])
-        submit = st.form_submit_button("Generate Report", disabled=not all_filled)
+        submit = st.form_submit_button(
+            "Generate Report",
+            disabled=not all([industry.strip(), target_market.strip(), goal.strip(), budget.strip()])
+        )
 
-    if submit and all_filled:
+    if submit:
         st.session_state.generated = True
         st.session_state.industry = industry
         st.session_state.target_market = target_market
@@ -404,10 +406,7 @@ elif page == "Generated Report" and st.session_state.get("generated"):
     budget = st.session_state.budget
     report_type = st.session_state.report_type
 
-    # You must define these functions elsewhere:
-    # get_business_feasibility_summary, generate_full_report,
-    # get_google_trends, get_market_insights, get_industry_market_summary
-
+    # These should be defined in your backend utils
     if report_type == "Summary":
         result = get_business_feasibility_summary(industry, target_market, goal, budget)
     else:
@@ -483,4 +482,3 @@ elif page == "Generated Report" and st.session_state.get("generated"):
 # Fallback
 else:
     st.info("Please generate a report from the Home page first.")
-
