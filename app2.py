@@ -350,116 +350,93 @@ def plot_growth_bar(df):
 # stream lit 
 import streamlit as st
 import matplotlib.pyplot as plt
+import os
 from xhtml2pdf import pisa
+import pandas as pd
 
-# Set Streamlit page config
+# Dummy data functions — Replace with your own logic
+def generate_full_report(industry, target_market, goal, budget):
+    return f"""
+    **AI-Powered Business Feasibility Report for {industry}**
+
+    **Target Market**: {target_market}  
+    **Goal**: {goal}  
+    **Budget**: {budget}  
+
+    This detailed report includes:
+    - Market trends
+    - Industry growth insights
+    - ETF-based investment potential
+    """
+
+def get_google_trends(industry):
+    trend_summary = f"Interest in {industry} is steadily increasing."
+    df = pd.DataFrame({industry: [10, 30, 50, 40]}, index=pd.date_range(start='2024-01', periods=4, freq='M'))
+    return trend_summary, df
+
+def get_market_insights(industry):
+    df = pd.DataFrame({
+        "Industry": [f"{industry} Sector {i}" for i in range(1, 11)],
+        "GrowthRate": [12, 9, 14, 7, 6, 5, 10, 11, 8, 13]
+    })
+    return None, df
+
+def get_industry_market_summary(industry):
+    summary = f"ETF performance for {industry} shows a stable upward trend."
+    hist = pd.DataFrame({
+        "Close": [100, 110, 105, 120]
+    }, index=pd.date_range(start='2024-01', periods=4, freq='M'))
+    return summary, hist
+
+# Streamlit Config
 st.set_page_config(page_title="AI Business Report Generator", layout="wide")
 
-# Session init
-if "page" not in st.session_state:
-    st.session_state.page = "Home"
-
-# Inject animation CSS
-st.markdown("""
-<style>
-@keyframes fadeIn {
-    0% {opacity: 0;}
-    100% {opacity: 1;}
-}
-@keyframes slideUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-h1, h4 {
-    animation: fadeIn 1.5s ease-in-out;
-}
-form {
-    animation: slideUp 1s ease-in-out;
-}
-.report-block {
-    animation: fadeIn 2s ease-in-out;
-}
-.back-btn {
-    transition: background 0.3s ease, transform 0.3s ease;
-}
-.back-btn:hover {
-    background-color: #1f4e79 !important;
-    transform: scale(1.03);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Determine current page
-page = st.session_state.page
+# Sidebar Navigation
+page = st.sidebar.radio("Navigation", ["Home", "Generated Report"])
 
 # Home Page
 if page == "Home":
     st.markdown("""
-        <h1 style='text-align: center; color: #1f4e79;'>AI-Powered Business Report Generator</h1>
-        <h4 style='text-align: center; color: #ccc;'>Generate investor-ready business reports using GPT-4 and market insights.</h4>
+        <style>
+            .report-title { font-size: 2.8em; font-weight: bold; color: #1f4e79; text-align: center; }
+            .report-subtitle { font-size: 1.2em; color: #333; text-align: center; margin-bottom: 2em; }
+            .stButton>button { background-color: #1f4e79; color: white; border-radius: 6px; font-weight: bold; }
+        </style>
+        <div class='report-title'>📊 AI-Powered Business Report Generator</div>
+        <div class='report-subtitle'>Generate investor-ready business reports using GPT-4 and market insights.</div>
     """, unsafe_allow_html=True)
 
     with st.form("report_form"):
-        st.markdown("### Enter Business Details")
-        industry = st.text_input("Industry", placeholder="e.g. Fintech")
-        target_market = st.text_input("Target Market", placeholder="e.g. Gen Z in North America")
-        goal = st.text_area("Business Goal", placeholder="Describe your product or idea")
-        budget = st.text_input("Estimated Budget", placeholder="$10,000")
-        report_type = st.text_input("Report Type (Type: Full or Summary)", placeholder="e.g. Full")
-
-        if industry and target_market and goal and budget and report_type:
-            st.markdown("""<style>
-                div.stButton > button:first-child {
-                    background: #28a745 !important;
-                }
-            </style>""", unsafe_allow_html=True)
-
-        submit = st.form_submit_button("Generate Report")
+        st.markdown("### 🚀 Enter Business Details")
+        industry = st.text_input("🔍 Industry", placeholder="e.g. Fintech")
+        target_market = st.text_input("🎯 Target Market", placeholder="e.g. Gen Z in North America")
+        goal = st.text_area("📌 Business Goal", placeholder="Describe your product or idea")
+        budget = st.text_input("💰 Estimated Budget", placeholder="$10,000")
+        submit = st.form_submit_button("Generate Full Report")
 
     if submit:
-        st.session_state.generated = True
-        st.session_state.industry = industry
-        st.session_state.target_market = target_market
-        st.session_state.goal = goal
-        st.session_state.budget = budget
-        st.session_state.report_type = report_type.lower().strip()
-        st.session_state.page = "Generated Report"
-        st.rerun()
+        if not all([industry, target_market, goal, budget]):
+            st.warning("⚠️ Please fill in all fields.")
+        else:
+            st.session_state.generated = True
+            st.session_state.industry = industry
+            st.session_state.target_market = target_market
+            st.session_state.goal = goal
+            st.session_state.budget = budget
+            st.success("✅ Report generated! View it under 'Generated Report'.")
 
 # Generated Report Page
-elif page == "Generated Report" and st.session_state.get("generated"):
+if page == "Generated Report" and st.session_state.get("generated"):
     industry = st.session_state.industry
     target_market = st.session_state.target_market
     goal = st.session_state.goal
     budget = st.session_state.budget
-    report_type = st.session_state.report_type
 
-    def get_business_feasibility_summary(ind, market, g, bud):
-        return f"""**Summary Report for {ind} Industry**
-Targeting: {market}
-Goal: {g}
-Budget: {bud}
-Feasibility: High potential in this market with strategic planning."""
-
-    def generate_full_report(ind, market, g, bud):
-        return f"""**Full Report for {ind} Industry**
-Target Market: {market}
-Business Goal: {g}
-Budget: {bud}
-Detailed insights and analysis will follow in respective sections including growth metrics and trends."""
-
-    if report_type == "summary":
-        result = get_business_feasibility_summary(industry, target_market, goal, budget)
-    else:
+    with st.spinner("🔍 Generating your full business report..."):
         result = generate_full_report(industry, target_market, goal, budget)
 
     formatted_result = result.replace('\n', '<br>')
+
     st.markdown("""
         <style>
             .report-block {
@@ -471,93 +448,63 @@ Detailed insights and analysis will follow in respective sections including grow
             }
         </style>
     """, unsafe_allow_html=True)
-    st.markdown("<h2 style='color:#1f4e79;'>Business Report</h2>", unsafe_allow_html=True)
+
+    st.markdown("<h2 style='color:#1f4e79;'>📘 Full Business Report</h2>", unsafe_allow_html=True)
     st.markdown(f"<div class='report-block'>{formatted_result}</div>", unsafe_allow_html=True)
 
-    # Only Full report has visuals
-    if report_type == "full":
-        st.markdown("---")
-        st.markdown("<h3 style='color:#1f4e79;'>Visual Market Analysis</h3>", unsafe_allow_html=True)
+    # Charts
+    st.markdown("---")
+    st.markdown("<h3 style='color:#1f4e79;'>📊 Visual Market Analysis</h3>", unsafe_allow_html=True)
 
-        def get_google_trends(ind):
-            import pandas as pd
-            return "Trend shows rising interest", pd.DataFrame({ind: [10, 30, 50, 40]})
+    trend_summary, trend_df = get_google_trends(industry)
+    st.markdown(f"*🔍 Google Trends Summary*: {trend_summary}")
+    if trend_df is not None:
+        fig1, ax1 = plt.subplots()
+        trend_df[trend_df.columns[0]].plot(ax=ax1, title=f"Google Trends for {industry}")
+        st.pyplot(fig1)
+        fig1.savefig("trend_chart.png")
 
-        def get_market_insights(ind):
-            import pandas as pd
-            return None, pd.DataFrame({"Industry": [ind]*5, "GrowthRate": [4, 6, 8, 3, 2]})
+    _, growth_df = get_market_insights(industry)
+    if growth_df is not None:
+        fig2, ax2 = plt.subplots()
+        top_df = growth_df.sort_values(by="GrowthRate", ascending=False).head(10)
+        ax2.barh(top_df["Industry"], top_df["GrowthRate"])
+        ax2.set_title("Top 10 Growing Industries")
+        ax2.invert_yaxis()
+        st.pyplot(fig2)
+        fig2.savefig("growth_chart.png")
 
-        def get_industry_market_summary(ind):
-            import pandas as pd
-            return "Stable performance in ETF sector.", pd.DataFrame({"Close": [100, 120, 110, 115]})
+    market_summary, hist = get_industry_market_summary(industry)
+    st.markdown(f"*📈 ETF Market Summary*: {market_summary}")
+    if hist is not None:
+        fig3, ax3 = plt.subplots()
+        hist["Close"].plot(ax=ax3, title=f"ETF Price Trend - {industry}")
+        st.pyplot(fig3)
+        fig3.savefig("etf_chart.png")
 
-        trend_summary, trend_df = get_google_trends(industry)
-        st.markdown(f"**Google Trends Summary**: {trend_summary}")
-        if trend_df is not None:
-            fig1, ax1 = plt.subplots()
-            trend_df[trend_df.columns[0]].plot(ax=ax1, title=f"Google Trends for {industry}")
-            st.pyplot(fig1)
-            fig1.savefig("trend_chart.png")
-
-        _, growth_df = get_market_insights(industry)
-        if growth_df is not None:
-            fig2, ax2 = plt.subplots()
-            top_df = growth_df.sort_values(by="GrowthRate", ascending=False).head(10)
-            ax2.barh(top_df["Industry"], top_df["GrowthRate"])
-            ax2.set_title("Top 10 Growing Industries")
-            ax2.invert_yaxis()
-            st.pyplot(fig2)
-            fig2.savefig("growth_chart.png")
-
-        market_summary, hist = get_industry_market_summary(industry)
-        st.markdown(f"**ETF Market Summary**: {market_summary}")
-        if hist is not None:
-            fig3, ax3 = plt.subplots()
-            hist["Close"].plot(ax=ax3, title=f"ETF Price Trend - {industry}")
-            st.pyplot(fig3)
-            fig3.savefig("etf_chart.png")
+    # PDF Export
+    st.markdown("### 📅 Download Report")
 
     def export_to_pdf(report_text, file_name):
-        formatted_text = report_text.replace("\n", "<br>")
-        html_content = f"""
-        <html><body>
+        html = f"""
+        <html>
+        <body>
             <h1>AI-Generated Business Report</h1>
-            <div>{formatted_text}</div>"""
-        if report_type == "full":
-            html_content += """<br><img src='trend_chart.png'>
-            <br><img src='growth_chart.png'>
-            <br><img src='etf_chart.png'>"""
-        html_content += "</body></html>"
-
+            <div>{report_text}</div>
+            <img src='trend_chart.png'><br>
+            <img src='growth_chart.png'><br>
+            <img src='etf_chart.png'><br>
+        </body>
+        </html>
+        """
         with open(file_name, "w+b") as f:
-            pisa.CreatePDF(html_content, dest=f)
+            pisa.CreatePDF(html, dest=f)
 
-    st.markdown("### Download Report")
-    export_to_pdf(result, "business_report.pdf")
+    export_to_pdf(formatted_result, "business_report.pdf")
+
     with open("business_report.pdf", "rb") as f:
-        st.download_button("Download PDF with Charts", f, "business_report.pdf", mime="application/pdf")
+        st.download_button("📄 Download PDF with Charts", f, "business_report.pdf", mime="application/pdf")
 
-    # Back Button with animation class
-    st.markdown("""
-        <style>
-        .stButton > button.back-btn {
-            background-color: #444 !important;
-            color: white;
-            font-weight: bold;
-            padding: 0.5em 1.5em;
-            border-radius: 10px;
-            border: none;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    if st.button("⬅ Back to Home", key="back", help="Go back", type="primary"):
-        st.session_state.page = "Home"
-        st.rerun()
-
-# Fallback
-else:
-    st.info("Please generate a report from the Home page first.")
 
 
 
