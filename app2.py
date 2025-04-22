@@ -17,6 +17,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from dotenv import load_dotenv
+from reddit_rag_scraper import get_reddit_posts
+from rag_vector_DB import build_vector_db_from_texts, retrieve_relevant_docs
 
 load_dotenv() 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -236,6 +238,10 @@ def generate_full_report(industry, target_market, goal, budget):
     statista_insight = get_statista_placeholder(industry)
     news_section = "\n".join(f"- {a['News']}" for a in news_articles[:5]) if news_articles else "No recent news available."
     google_headlines = "\n".join(f"- {headline}" for headline in google_news)
+    reddit_posts = get_reddit_posts(industry)
+    reddit_db = build_vector_db_from_texts(reddit_posts)
+    reddit_context = "\n".join([doc.page_content for doc in retrieve_relevant_docs(reddit_db, industry)])
+
 
     prompt = f"""
     You are an expert AI business analyst with deep knowledge of industry trends, competitive analysis, and financial modeling.
@@ -270,6 +276,8 @@ def generate_full_report(industry, target_market, goal, budget):
     🔹 Latest Sector Headlines/Real-World Industry Headlines (scraped from financial news sites):
     {news_section}
     
+    🔹 Reddit & LinkedIn Trend Insight:
+    {reddit_context}   
     
     ✅ Please include:
     - Competitor Overview with at least two similar startups or platforms
@@ -454,7 +462,7 @@ elif page == "Generated Report" and st.session_state.get("generated"):
     # Visual Market Insights Tabs
     st.markdown("---")
     st.markdown("<h3 style='color:#1f4e79;'>Visual Market Insights</h3>", unsafe_allow_html=True)
-    tabs = st.tabs(["📈 Google Trends", "💹 ETF Price Trend", "📊 Industry Growth"])
+    tabs = st.tabs(["📈 Google Trends", "💹 ETF Price Trend", "📊 Industry Growth",  "💬 Reddit Trends"])
 
     # Tab 1: Google Trends
     with tabs[0]:
@@ -487,6 +495,19 @@ elif page == "Generated Report" and st.session_state.get("generated"):
             ax3.invert_yaxis()
             st.pyplot(fig3)
             fig3.savefig("growth_chart.png")
+            
+    # Tab 4: Reddit Trends
+    with tabs[3]:
+        reddit_posts = get_reddit_posts(industry)
+        reddit_db = build_vector_db_from_texts(reddit_posts)
+        reddit_context = "\n".join([doc.page_content for doc in retrieve_relevant_docs(reddit_db, industry)])
+        st.markdown(f"*Reddit Trends*: {reddit_context}")
+    st.markdown("---")
+    st.markdown("<h3 style='color:#1f4e79;'>Download Report</h3>", unsafe_allow_html=True)      
+    st.markdown("Click the button below to download your report as a PDF.")
+    st.markdown("This report includes charts and insights based on your inputs.")
+    st.markdown("**Note**: The report is generated based on the latest data available and may include estimates.")
+    st.markdown("**Disclaimer**: This report is for informational purposes only and should not be considered financial advice.")
 
     # Export to PDF
     def export_to_pdf(report_text, file_name):
@@ -505,7 +526,7 @@ elif page == "Generated Report" and st.session_state.get("generated"):
         with open(file_name, "w+b") as f:
             pisa.CreatePDF(html_content, dest=f)
 
-    st.markdown("### Download Report")
+    # st.markdown("### Download Report")
     export_to_pdf(result, "business_report.pdf")
     with open("business_report.pdf", "rb") as f:
         st.download_button("Download PDF with Charts", f, "business_report.pdf", mime="application/pdf")
@@ -518,4 +539,4 @@ elif page == "Generated Report" and st.session_state.get("generated"):
 # Fallback
 else:
     st.info("Please generate a report from the Home page first.")
-    #gg
+    
