@@ -46,16 +46,21 @@ BizGen-AI is an AI-powered business report generator that helps small businesses
 
 # Project Structure
 
-bash
-Copy
-Edit
-├── app.py                    # Main Streamlit web interface
+
+├── app2.py                  # Main Streamlit web interface
+
 ├── rag_vector_DB.py         # FAISS-based vector store setup for Reddit post embeddings
+
 ├── reddit_rag_scraper.py    # Reddit post scraper and cleaner using PRAW
+
 ├── news_scraper.py          # Scrapers for Investopedia, Google News, and financial headlines
+
 ├── industry_growth.csv      # Static data with CAGR and competitor insights
+
 ├── company_with_sectors.csv # Industry-to-ETF mapping support
+
 ├── charts/                  # Auto-generated visualizations (PNG)
+
 └── README.md
 
 # Version Control & Collaboration
